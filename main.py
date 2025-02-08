@@ -119,8 +119,11 @@ run = True
 BGmusic.play(-1)
 BGmusic.set_volume(0.1) 
 
+bubuchacha_time=pygame.time.get_ticks()
+
 value=0
 while run:
+    
     for event in pygame.event.get():
         if event.type == QUIT:
             run = False  
@@ -155,7 +158,9 @@ while run:
         mouse_pos=pygame.mouse.get_pos()
         hammer_rect.center=(mouse_pos[0],mouse_pos[1])
     if hit:
+        
         now = pygame.time.get_ticks()
+        bubuchacha_time = now
         if now - dead_last_frame > 50:
             dead_last_frame=now
             value+=1
@@ -168,7 +173,11 @@ while run:
             # time.sleep(1)  
     pygame.display.flip()
 
-
+    temp = pygame.time.get_ticks()
+    if (temp - bubuchacha_time > 5000):
+        pos = random_mole()
+        bubuchacha_time = temp
+        
     now = pygame.time.get_ticks()
     if now - last_update > 1000 and hit_num > 0:
         last_update = now
@@ -181,6 +190,8 @@ while run:
         mole_rect.y = pos
     screen.fill(BG)
     
+ 
+        
     if hit_num >0:
         draw_text(f'Start: {hit_num}', 50, WHITE, WIDTH//2-30, HEIGHT//2-90)
     else:
