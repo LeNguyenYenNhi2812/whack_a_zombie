@@ -3,11 +3,12 @@ import os
 import random
 from os import path
 from pygame.locals import *
-
+import threading
 game_folder = os.path.dirname(__file__)
 
 img_folder = os.path.join(game_folder, 'img')
-
+zombie_folder = os.path.join(img_folder, 'zombie/attack')
+dead_zombie = os.path.join(img_folder, 'zombie/die')
 
 WIDTH = 800
 HEIGHT = 800
@@ -38,14 +39,22 @@ clock = pygame.time.Clock()
 #mouse
 mouse_pos = (0,0)
 pygame.mouse.set_visible(False)
-hit_num = 3
+hit_num =1
 last_update = pygame.time.get_ticks()
 score = 0
 miss = 0
 pos=0
-countdown = 3
-
+hit = False
+# ! cao đao
+countdown1 = 30
+countdown=countdown1
+current_frame = 0
+current_frame1=0
+frame_rate= 50
+frame_rate1 = 50
 last_countdown = pygame.time.get_ticks()
+old_rect=pygame.Rect(0, 0, 0, 0)  
+dead_last_frame = pygame.time.get_ticks()
 gameOver = False
 # sound
 bonk = pygame.mixer.Sound(os.path.join(img_folder, 'bonk.mp3'))
@@ -63,6 +72,15 @@ hammer_rect=hammer_img.get_rect()
 
 mole = pygame.transform.scale(pygame.image.load(os.path.join(img_folder, 'mole.png')).convert_alpha(),(100, 100))
 mole_rect=mole.get_rect()
+
+attack_images = []
+for i in range(12):  
+    img_path = os.path.join(zombie_folder, f"Attacking_{i:03}.png")
+    attack_images.append(pygame.transform.scale(pygame.image.load(img_path).convert_alpha(), (100, 100)))
+dead_images = []
+for i in range(15): 
+    img_path = os.path.join(dead_zombie, f"Dying_{i:03}.png")
+    dead_images.append(pygame.transform.scale(pygame.image.load(img_path).convert_alpha(), (100, 100)))
 
 def draw_mound():
     x,y=0,0
@@ -101,18 +119,18 @@ run = True
 BGmusic.play(-1)
 BGmusic.set_volume(0.1) 
 
-
-
+value=0
 while run:
-    
     for event in pygame.event.get():
         if event.type == QUIT:
-            run = False
+            run = False  
         if event.type == MOUSEBUTTONDOWN and hit_num == 0:
             if event.button == 1 and not gameOver:
                 if mole_rect.collidepoint(mouse_pos):
                     bonk.play()
                     score += 1
+                    hit=True
+                    old_rect = mole_rect.copy()
                     pos=random_mole()
                 else:
                     miss_sound.play()
@@ -120,7 +138,7 @@ while run:
                     # print("miss")
                 
                 hammer_img=hammer[1]
-                
+               
         if event.type == MOUSEBUTTONUP:
             if event.button == 1:
                 hammer_img=hammer[0]
@@ -129,13 +147,25 @@ while run:
                 hit_num = 3
                 score = 0
                 miss = 0
-                countdown = 3
+                countdown = countdown1
                 gameOver = False
                 pos=random_mole()
                 last_countdown = pygame.time.get_ticks()
                 # print("restart") 
         mouse_pos=pygame.mouse.get_pos()
         hammer_rect.center=(mouse_pos[0],mouse_pos[1])
+    if hit:
+        now = pygame.time.get_ticks()
+        if now - dead_last_frame > 50:
+            dead_last_frame=now
+            value+=1
+            if value>=len(dead_images):
+                value=0
+                hit=False
+            
+        image = dead_images[value]
+        screen.blit(image, old_rect)   
+            # time.sleep(1)  
     pygame.display.flip()
 
 
@@ -154,8 +184,18 @@ while run:
     if hit_num >0:
         draw_text(f'Start: {hit_num}', 50, WHITE, WIDTH//2-30, HEIGHT//2-90)
     else:
-        screen.blit(mole,mole_rect)
+        # Trick lỏ
         if not gameOver:
+            screen.blit(attack_images[current_frame],mole_rect)
+            if frame_rate > 0:
+                frame_rate -=1
+            else:
+                current_frame = (current_frame + 1) % len(attack_images)
+                frame_rate=40
+            
+            # time.sleep(frame_rate)
+            
+            # time.sleep(1)
             draw_countdown()
             draw_text(f'Score: {score}', 50, WHITE, 15, 20)
             draw_text(f'Miss: {miss}', 50, WHITE, 15, 70)
@@ -178,5 +218,4 @@ while run:
         draw_text('Press R to restart', 30, WHITE, WIDTH//2-200, HEIGHT//2+80)
     
     screen.blit(hammer_img,hammer_rect)
-
 pygame.quit()
